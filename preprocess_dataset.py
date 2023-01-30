@@ -15,45 +15,61 @@ def parse_args():
         N (int): number of features to pad to. Default: 15
         """
     parser = argparse.ArgumentParser(
-        description="Provide details of the preprocessment of the Ego4d downloaded features."
+            description="Provide details of the preprocessment of the Ego4d downloaded features."
     )
     parser.add_argument(
-        "download_path",
-        help="Path where the ego4d features where downloaded into",
-        default="Ego4d/v1/slowfast8x8_r101_k400/",
-        type=str,
+            "--dir_annotations",
+            help="path where the annotations can be found",
+            # default="Ego4d/v1/slowfast8x8_r101_k400/",
+            default="data/annotations/",
+            type=str,
+            required=False,
     )
     parser.add_argument(
-        "features_path",
-        help="Path to where the preprocessed features will be stored for model training/testing",
-        default="Ego4D/features_pad/",
-        type=str,
+            "--download_path",
+            help="Path where the ego4d features where downloaded into",
+            # default="Ego4d/v1/slowfast8x8_r101_k400/",
+            default="/home/federico/ego4d_data/v1/slowfast8x8_r101_k400/",
+            type=str,
+            required=False,
     )
     parser.add_argument(
-        "W",
-        help="Windows size of the feature extractor",
-        default=32,
-        type=int,
+            "--features_path",
+            help="Path to where the preprocessed features will be stored for model training/testing",
+            # default="Ego4D/features_pad/",
+            default="/home/federico/ego4d_data/icvae/",
+            type=str,
+            required=False,
     )
     parser.add_argument(
-        "S",
-        help="Stride of the feature extractor",
-        default=16,
-        type=int,
+            "-W",
+            help="Windows size of the feature extractor",
+            default=32,
+            type=int,
+            required=False,
     )
     parser.add_argument(
-        "N",
-        help="Number of features to pad to",
-        default=15,
-        type=int,
+            "-S",
+            help="Stride of the feature extractor",
+            default=16,
+            type=int,
+            required=False,
     )
     parser.add_argument(
-        "--remove",
-        help="To remove the downloaded matched features or not after padding",
-        default=True,
-        type=bool,
+            "-N",
+            help="Number of features to pad to",
+            default=15,
+            type=int,
+            required=False,
     )
-    return parser.parse_args()
+    parser.add_argument(
+            "--remove",
+            help="To remove the downloaded matched features or not after padding",
+            default=False,  # True
+            type=bool,
+            required=False,
+    )
+    return dict(parser.parse_args().__dict__)
 
 
 def read_json(filename):
@@ -84,9 +100,9 @@ def read_annotations(dir_annotations):
             if video_uid not in summary_data:
                 summary_data[video_uid] = []
 
-            info_clip = {"clip_uid": clip_uid,
+            info_clip = {"clip_uid"   : clip_uid,
                          "start_frame": c["action_clip_start_frame"],
-                         "end_frame": c["action_clip_end_frame"]}
+                         "end_frame"  : c["action_clip_end_frame"]}
             summary_data[video_uid].append(info_clip)
     return summary_data
 
@@ -130,13 +146,14 @@ def preprocess_features(args):
                     end_feat = frame_to_feat(res["end_frame"])
                     feat_clip = data[start_feat:end_feat].clone()
                     store_path = args["features_path"] + res["clip_uid"] + ".pt"
-                    if (end_feat - start_feat) != args["N"]:
+                    if (end_feat - start_feat)!=args["N"]:
                         pad = torch.zeros(args["N"] - feat_clip.shape[0], feat_clip.shape[1])
                         feat_clip = torch.vstack([pad, feat_clip])
                     torch.save(feat_clip, store_path)
                 if args["remove"]:
                     os.remove(f)
 
-if __name__ == '__main__':
+
+if __name__=='__main__':
     args = parse_args()
     preprocess_features(args)
